@@ -1,30 +1,75 @@
-from flask import Flask, request, url_for, redirect, render_template
+from flask import Flask, request, url_for, redirect, render_template, session, flash
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'super_segredo'
 
-user = None
 livros = []
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
-@app.route('/cadastro')
+@app.route('/cadastro', methods=['POST', 'GET'])
 def cadastro():
-    if user:
-        return redirect(url_for('cadastro_livros'))
+    if 'user' in session:
+        return redirect(url_for('login'))
+    
+    if request.method == 'POST':
+        login = request.form.get('login')
+        senha = request.form.get('senha')
+
+        conexao = criar_conexao()
+        cursor = conexao.cursor()
+
+        resultado = cursor.execute("SELECT * FROM usuarios WHERE login == ?", (login,))
+        user = resultado.fetchone()
+
+        if not user:
+            
+            cursor.execute("INSERT INTO usuarios(login, senha) VALUES (?,?)", (login, senha))
+            conexao.commit()
+            conexao.close()
+
+            return redirect(url_for('login'))
+        
+        else:
+            flash('usuário existente')
+            return redirect(url_for('cadastro'))
+
     return render_template('cadastro.html')
 
-@app.route('/login', methods=['POST'])
+@app.route('/login', methods=['GET', 'post'])
 def login():
-    global user
-    user = request.form.get('login')
-    return redirect(url_for('cadastro_livros'))
+
+    if 'user' in session:
+        return redirect(url_for('login'))
+        
+    
+    if request.method == 'POST':
+        login = request.form.get('login')
+        senha = request.form.get('senha')
+
+        conexao = criar_conexao() # falta criar o banco né
+        cursor = conexao.cursor()
+
+        resultado = cursor.execute("SELECT * FROM usuarios WHERE login == ?", (login,))
+        user = resultado.fetchone()
+
+        if user and user['login'] == login and user['senha'] == senha:
+            session['user'] = login
+            session['id'] = user['id']
+            return redirect(url_for('cadastro_livros'))
+        else:
+            flash('usuário ou senha incorreto(s)', 'error')
+            return redirect(url_for('login'))
+    
+    return render_template('login.html')
 
 @app.route('/cadastro_livros')
 def cadastro_livros():
-    if not user:
-        return redirect(url_for('cadastro'))
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
     return render_template('cadastro_livros.html')
 
 @app.route('/adicionar-livro', methods=['POST'])
@@ -41,21 +86,23 @@ def adicionar_livro():
 
 @app.route('/livros-cadastrados')
 def livros_cadastrados():
-    if not user:
-        return redirect(url_for('cadastro'))
+    if 'user' not in session:
+        return redirect(url_for('login'))
+    
     return render_template('livros_cadastrados.html', livros = livros)
 
 @app.route('/logout', methods=['POST'])
 def logout():
     global user, livros
-    user = None
-    livros = []
+    session.pop('user', None)
+    session.pop('id', None)
+    livros = [] # ?
     return redirect(url_for('index'))
 
 @app.route('/livros_cadastrados', methods=['POST'])
 def botao_pagLivros():
-    if not user:
-        return redirect(url_for('cadastro'))
+    if 'user' not in session:
+        return redirect(url_for('login'))
     return redirect(url_for('livros_cadastrados'))
 
 @app.route('/excluir-livro/<int:indice>' , methods=['POST']) 
@@ -68,6 +115,8 @@ def excluir_livro(indice):
 @app.route('/editar-livro/<int:indice>', methods=['GET', 'POST'])
 def editar_livro(indice):
     global livros
+    if 'user' not in session:
+        return redirect(url_for('login'))
     
     if request.method == 'GET':
         if 0 <= indice < len(livros):
