@@ -14,7 +14,7 @@
             <label>Gênero:</label>
             <input type="text" name="genero" value="{{ livro.genero }}" required>
             <label>Descrição:</label>
-            <textarea name="descricao" required>{{ livro.desc }}</textarea>
+            <textarea name="descricao" required>{{ livro.descricao }}</textarea>
             <div>
                 <input type="checkbox" name="lido" {% if livro.lido %} checked {% endif %}>
                 Marcar como lido
