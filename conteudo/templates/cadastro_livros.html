@@ -19,7 +19,16 @@
         <button id="BotaoLivro">Enviar</button>
         <p id="mensagem"></p>
     </form>
-    <form action="{{url_for('cadastro_livros')}}" method="post">
+    <form action="{{url_for('livros_cadastrados')}}">
         <button>Ir para a página de livros</button>
     </form>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul>
+            {% for category, message in messages %}
+                <li class="alert alert-{{ category }}">{{ message }}</li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
 {% endblock %}

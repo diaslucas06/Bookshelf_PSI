@@ -15,14 +15,14 @@
                 {% set nao_lidos.value = nao_lidos.value + 1 %}
                 <li>
                     <h2>{{livro.titulo}}</h2>
-                    <p>{{livro.desc}}</p>
+                    <p>{{livro.descricao}}</p>
                     <div class="baixo-li">
                         <h3><b>Gênero:</b> {{livro.genero}}</h3>
                         <div class="botoes">
-                            <form action="{{ url_for('editar_livro', indice=loop.index0) }}">
+                            <form action="{{ url_for('editar_livro', id_livro=livro['id']) }}">
                                 <button>Editar</button>
                             </form>
-                            <form action="{{ url_for('excluir_livro', indice=loop.index0) }}" method="POST">
+                            <form action="{{ url_for('excluir_livro', id_livro=livro['id']) }}" method="POST">
                                 <button>Excluir</button>
                             </form>
                         </div>
@@ -44,14 +44,14 @@
                 {% set lidos.value = lidos.value + 1 %}
                 <li>
                     <h2>{{livro.titulo}}</h2>
-                    <p>{{livro.desc}}</p>
+                    <p>{{livro.descricao}}</p>
                     <div class="baixo-li">
                         <h3><b>Gênero:</b> {{livro.genero}}</h3>
                         <div class="botoes">
-                            <form action="{{ url_for('editar_livro', indice=loop.index0) }}">
+                            <form action="{{ url_for('editar_livro', id_livro=livro['id']) }}">
                                 <button>Editar</button>
                             </form>
-                            <form action="{{ url_for('excluir_livro', indice=loop.index0) }}" method="POST">
+                            <form action="{{ url_for('excluir_livro', id_livro=livro['id']) }}" method="POST">
                                 <button>Excluir</button>
                             </form>
                         </div>
