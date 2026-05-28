@@ -1,58 +1,14 @@
 from flask import Flask, request, url_for, redirect, render_template, session, flash
-import sqlite3
-import os
-
+from .db import conectar_banco, iniciar_banco # funções do banco estão em outro arquivo
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'super_segredo'
 
-
-livros = []
-
-
-dir = os.path.dirname(os.path.abspath(__file__))
-db = os.path.join (dir, "banco.db")
-
-
-def conectar_banco():
-    conexao = sqlite3.connect(db)
-    conexao.row_factory = sqlite3.Row
-    return conexao
-
-
-def iniciar_banco():
-    conexao = conectar_banco()
-    cursor = conexao.cursor()
-
-
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS usuarios (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        usuario VARCHAR NOT NULL,
-        senha VARCHAR NOT NULL          
-    );              
-                                 
-    """)
-
-
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS livros (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,        
-        titulo VARCHAR NOT NULL,
-        genero VARCHAR,
-        descricao VARCHAR,
-        lido INTEGER,
-        usuario_id INTEGER          
-    );                          
-    """)
-    conexao.commit()
-    conexao.close()
-
+iniciar_banco()
 
 @app.route('/')
 def index():
     return render_template('index.html')
-
 
 @app.route('/cadastro', methods=['POST', 'GET'])
 def cadastro():
@@ -63,10 +19,8 @@ def cadastro():
         login = request.form.get('login')
         senha = request.form.get('senha')
 
-
         conexao = conectar_banco()
         cursor = conexao.cursor()
-
 
         resultado = cursor.execute("SELECT * FROM usuarios WHERE usuario = ?", (login,))
         user = resultado.fetchone()
@@ -93,19 +47,15 @@ def cadastro():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
 
-
     if 'user' in session:
         return redirect(url_for('cadastro_livros'))
        
-   
     if request.method == 'POST':
         login = request.form.get('login')
         senha = request.form.get('senha')
 
-
         conexao = conectar_banco()
         cursor = conexao.cursor()
-
 
         resultado = cursor.execute("SELECT * FROM usuarios WHERE usuario = ?", (login,))
         user = resultado.fetchone()
@@ -134,13 +84,32 @@ def cadastro_livros():
 @app.route('/adicionar-livro', methods=['POST'])
 def adicionar_livro():
     global livros
-    livro = {
-        "titulo": request.form.get('titulo'),
-        "genero": request.form.get('genero'),
-        "descricao": request.form.get('descricao'),
-        "lido": False
-    }
-    livros.append(livro)
+    titulo = request.form.get('titulo')
+    genero = request.form.get('genero')
+    descricao = request.form.get('descricao')
+
+    conexao = conectar_banco()
+    cursor = conexao.cursor()
+
+    resultado = cursor.execute("SELECT * FROM livros WHERE titulo = ?", (titulo,))
+    book = resultado.fetchone()
+
+    user = session['id']
+
+    if not book:
+           
+        cursor.execute("INSERT INTO livros(titulo, genero, descricao, usuario_id) VALUES (?,?,?,?)", (titulo, genero, descricao, user))
+        resultado = cursor.execute("SELECT * FROM generos WHERE nome = ?", (genero,))
+        genero_existe = resultado.fetchone()
+        if not genero_existe:
+            cursor.execute("INSERT INTO generos(nome) VALUES (?)", (genero,))
+        conexao.commit()
+        conexao.close()
+
+        return redirect(url_for('livros_cadastrados'))
+    
+    conexao.close()
+    flash('livro existente')
     return redirect(url_for('livros_cadastrados'))
 
 
@@ -148,47 +117,67 @@ def adicionar_livro():
 def livros_cadastrados():
     if 'user' not in session:
         return redirect(url_for('login'))
+    
+    conexao = conectar_banco()
+    cursor = conexao.cursor()
+
+    resultado = cursor.execute("SELECT * FROM livros WHERE usuario_id = ?", (session['id'],))
+    livros_db = resultado.fetchall()
    
-    return render_template('livros_cadastrados.html', livros = livros)
+    return render_template('livros_cadastrados.html', livros = livros_db)
 
 
 @app.route('/logout', methods=['POST'])
 def logout():
-    global livros
     session.pop('user', None)
     session.pop('id', None)
-    livros = [] # ?
     return redirect(url_for('index'))
 
 
-@app.route('/excluir-livro/<int:indice>' , methods=['POST'])
-def excluir_livro(indice):
-    global livros
-    if 0 <= indice < len(livros):
-        livros.pop(indice)
+@app.route('/excluir-livro/<int:id_livro>' , methods=['POST'])
+def excluir_livro(id_livro):
+    conexao = conectar_banco()
+    cursor = conexao.cursor()
+
+    cursor.execute("DELETE FROM livros WHERE id = ?", (id_livro,))
+
+    conexao.commit()
+    conexao.close()
     return redirect(url_for('livros_cadastrados'))
 
 
-@app.route('/editar-livro/<int:indice>', methods=['GET', 'POST'])
-def editar_livro(indice):
-    global livros
+@app.route('/editar-livro/<int:id_livro>', methods=['GET', 'POST'])
+def editar_livro(id_livro):
+
     if 'user' not in session:
         return redirect(url_for('login'))
-   
+    
+    conexao = conectar_banco()
+    cursor = conexao.cursor()
+
     if request.method == 'GET':
-        if 0 <= indice < len(livros):
-            livro = livros[indice]
-            return render_template('editar_livro.html', livro=livro, indice=indice)
+        resultado = cursor.execute("SELECT * FROM livros WHERE id = ?", (id_livro,))
+        livro = resultado.fetchone()
+
+        conexao.commit()
+        conexao.close()
+
+        if livro:
+            return render_template('editar_livro.html', livro=livro)
+        
+        flash("Livro não encontrado.")
         return redirect(url_for('livros_cadastrados'))
 
+    titulo = request.form.get('titulo')
+    genero = request.form.get('genero')
+    descricao = request.form.get('descricao')
+    lido = request.form.get('lido') == 'on'
+    
+    conexao.execute("UPDATE livros SET titulo = ?, genero = ?, descricao = ?, lido = ? WHERE id = ?", (titulo, genero, descricao, lido, id_livro))
+    
+    conexao.commit()
+    conexao.close()
 
-    if 0 <= indice < len(livros):
-        livros[indice] = {
-            "titulo": request.form.get('titulo'),
-            "genero": request.form.get('genero'),
-            "descricao": request.form.get('descricao'),
-            "lido": request.form.get('lido') == 'on'
-        }
     return redirect(url_for('livros_cadastrados'))
 
 
