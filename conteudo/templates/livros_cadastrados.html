@@ -8,12 +8,23 @@
     <h1>Seus livros</h1>
 
     <div class="filtros-container">
-        <span>Filtrar:</span>
-        <a href="{{ url_for('livros_cadastrados', status='todos') }}" class="filtro {% if filtro_atual == 'todos' %}ativo{% endif %}">Todos</a>
-        <a href="{{ url_for('livros_cadastrados', status='lidos') }}" class="filtro {% if filtro_atual == 'lidos' %}ativo{% endif %}">Lidos</a>
-        <a href="{{ url_for('livros_cadastrados', status='nao-lidos') }}" class="filtro {% if filtro_atual == 'nao-lidos' %}ativo{% endif %}">Não Lidos</a>
+        <span><b>Status:</b></span>
+        <a href="{{ url_for('livros_cadastrados', status='todos', genero=genero_atual) }}" class="filtro {% if filtro_atual == 'todos' %}ativo{% endif %}">Todos</a>
+        <a href="{{ url_for('livros_cadastrados', status='lidos', genero=genero_atual) }}" class="filtro {% if filtro_atual == 'lidos' %}ativo{% endif %}">Lidos</a>
+        <a href="{{ url_for('livros_cadastrados', status='nao-lidos', genero=genero_atual) }}" class="filtro {% if filtro_atual == 'nao-lidos' %}ativo{% endif %}">Não Lidos</a>
     </div>
 
+    <form action="{{ url_for('livros_cadastrados') }}" method="GET" class="form-filtro-genero">
+        <input type="hidden" name="status" value="{{ filtro_atual }}">
+        
+        <label for="genero"><b>Gênero:</b></label>
+        <select name="genero" id="genero" onchange="this.form.submit()">
+            <option value="todos" {% if genero_atual == 'todos' %}selected{% endif %}>Todos os Gêneros</option>
+            {% for g in generos %}
+                <option value="{{ g.nome }}" {% if genero_atual == g.nome %}selected{% endif %}>{{ g.nome }}</option>
+            {% endfor %}
+        </select>
+    </form>
     {% if filtro_atual == 'todos' or filtro_atual == 'nao-lidos' %}
         <h2>Não lidos</h2>
         <ul>

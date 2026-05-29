@@ -119,14 +119,23 @@ def livros_cadastrados():
         return redirect(url_for('login'))
     
     filtro_status = request.args.get('status', default='todos')
+    filtro_genero = request.args.get('genero', default='todos')
     
     conexao = conectar_banco()
     cursor = conexao.cursor()
 
-    resultado = cursor.execute("SELECT * FROM livros WHERE usuario_id = ?", (session['id'],))
+    resultado_generos = cursor.execute("SELECT * FROM generos")
+    generos_db = resultado_generos.fetchall()
+
+    if filtro_genero != 'todos':
+        resultado = cursor.execute("SELECT * FROM livros WHERE usuario_id = ? AND genero = ?", (session['id'], filtro_genero))
+    else:
+        resultado = cursor.execute("SELECT * FROM livros WHERE usuario_id = ?", (session['id'],))
+        
     livros_db = resultado.fetchall()
+    conexao.close()
    
-    return render_template('livros_cadastrados.html', livros = livros_db, filtro_atual = filtro_status)
+    return render_template( 'livros_cadastrados.html', livros=livros_db, filtro_atual=filtro_status, generos=generos_db, genero_atual=filtro_genero)
 
 
 @app.route('/logout', methods=['POST'])
