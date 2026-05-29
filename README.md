@@ -8,32 +8,32 @@
 
 ## 2. Funcionalidades
 
-### Formulário para cadastro e login;
-### Controle de acesso por meio de sessões;
-### Formulário para cadastro de livros;
-### Status dos livros: "Já li" e "Não li";
-### Listagem de todos os livros cadastrados pelo usuário;
-### Filtro de livros;
-### Editar as informações de um livro já cadastrado;
-### Excluir de forma definitiva um item da sua coleção;
-### Armazenamento dos dados do sistema no banco de dados SQLite3.
+- Formulário para cadastro e login;
+- Controle de acesso por meio de sessões;
+- Formulário para cadastro de livros;
+- Status dos livros: "Já li" e "Não li";
+- Listagem de todos os livros cadastrados pelo usuário;
+- Filtro de livros;
+- Editar as informações de um livro já cadastrado;
+- Excluir de forma definitiva um item da sua coleção;
+- Armazenamento dos dados do sistema no banco de dados SQLite3.
 
 ## 3. Como executar o projeto
 
-### 3.1 Clonar o repositório:
-### git clone
+**3.1 Clonar o repositório:**
+- git clone
 
-### 3.1 Criar e ativar o ambiente virtual:
-### py -m venv env
-### env\scripts\activate
+**3.1 Criar e ativar o ambiente virtual:**
+- py -m venv env
+- env\scripts\activate
 
-### 3.2 Baixar o flask:
-### pip install flask
+**3.2 Baixar o flask:**
+- pip install flask
 
-### 3.3 Baixar extenssões para o banco de dados.
+**3.3 Baixar extenssões para o banco de dados.**
 
-### 3.4 E executar o projeto:
-### flask run --debug
+**3.4 E executar o projeto:**
+- flask run --debug
 
 ## 4. Integrantes do Grupo
 
