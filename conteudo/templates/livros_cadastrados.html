@@ -6,64 +6,78 @@
 
 {% block content %}
     <h1>Seus livros</h1>
-    <h2>Não lidos</h2>
-    <ul>
-    {% set nao_lidos = namespace(value=0) %}
-    
-        {% for livro in livros %}
-            {% if not livro.lido %}
-                {% set nao_lidos.value = nao_lidos.value + 1 %}
-                <li>
-                    <h2>{{livro.titulo}}</h2>
-                    <p>{{livro.descricao}}</p>
-                    <div class="baixo-li">
-                        <h3><b>Gênero:</b> {{livro.genero}}</h3>
-                        <div class="botoes">
-                            <form action="{{ url_for('editar_livro', id_livro=livro['id']) }}">
-                                <button>Editar</button>
-                            </form>
-                            <form action="{{ url_for('excluir_livro', id_livro=livro['id']) }}" method="POST">
-                                <button>Excluir</button>
-                            </form>
-                        </div>
-                    </div>
-                </li>
-            {% endif %}
-        {% endfor %}
 
-        {% if nao_lidos.value == 0 %}
-            <p p class="mensagem">Você não tem livros pendentes.</p>
-        {% endif %}
-    </ul>
-    <h2>Lidos</h2>
-    <ul>
-    {% set lidos = namespace(value=0) %}
-    
-        {% for livro in livros %}
-            {% if livro.lido %}
-                {% set lidos.value = lidos.value + 1 %}
-                <li>
-                    <h2>{{livro.titulo}}</h2>
-                    <p>{{livro.descricao}}</p>
-                    <div class="baixo-li">
-                        <h3><b>Gênero:</b> {{livro.genero}}</h3>
-                        <div class="botoes">
-                            <form action="{{ url_for('editar_livro', id_livro=livro['id']) }}">
-                                <button>Editar</button>
-                            </form>
-                            <form action="{{ url_for('excluir_livro', id_livro=livro['id']) }}" method="POST">
-                                <button>Excluir</button>
-                            </form>
-                        </div>
-                    </div>
-                </li>
-            {% endif %}
-        {% endfor %}
+    <div class="filtros-container">
+        <span>Filtrar:</span>
+        <a href="{{ url_for('livros_cadastrados', status='todos') }}" class="filtro {% if filtro_atual == 'todos' %}ativo{% endif %}">Todos</a>
+        <a href="{{ url_for('livros_cadastrados', status='lidos') }}" class="filtro {% if filtro_atual == 'lidos' %}ativo{% endif %}">Lidos</a>
+        <a href="{{ url_for('livros_cadastrados', status='nao-lidos') }}" class="filtro {% if filtro_atual == 'nao-lidos' %}ativo{% endif %}">Não Lidos</a>
+    </div>
 
-        {% if lidos.value == 0 %}
-            <p class="mensagem">Nenhum livro lido ainda. Continue lendo!</p>
-        {% endif %}
-    </ul>
+    {% if filtro_atual == 'todos' or filtro_atual == 'nao-lidos' %}
+        <h2>Não lidos</h2>
+        <ul>
+        {% set nao_lidos = namespace(value=0) %}
+        
+            {% for livro in livros %}
+                {% if not livro.lido %}
+                    {% set nao_lidos.value = nao_lidos.value + 1 %}
+                    <li>
+                        <h2>{{livro.titulo}}</h2>
+                        <p>{{livro.descricao}}</p>
+                        <div class="baixo-li">
+                            <h3><b>Gênero:</b> {{livro.genero}}</h3>
+                            <div class="botoes">
+                                <form action="{{ url_for('editar_livro', id_livro=livro['id']) }}">
+                                    <button>Editar</button>
+                                </form>
+                                <form action="{{ url_for('excluir_livro', id_livro=livro['id']) }}" method="POST">
+                                    <button>Excluir</button>
+                                </form>
+                            </div>
+                        </div>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if nao_lidos.value == 0 %}
+                <p class="mensagem">Você não tem livros pendentes.</p>
+            {% endif %}
+        </ul>
+    {% endif %}
+
+    {% if filtro_atual == 'todos' or filtro_atual == 'lidos' %}
+        <h2>Lidos</h2>
+        <ul>
+        {% set lidos = namespace(value=0) %}
+        
+            {% for livro in livros %}
+                {% if livro.lido %}
+                    {% set lidos.value = lidos.value + 1 %}
+                    <li>
+                        <h2>{{livro.titulo}}</h2>
+                        <p>{{livro.descricao}}</p>
+                        <div class="baixo-li">
+                            <h3><b>Gênero:</b> {{livro.genero}}</h3>
+                            <div class="botoes">
+                                <form action="{{ url_for('editar_livro', id_livro=livro['id']) }}">
+                                    <button>Editar</button>
+                                </form>
+                                <form action="{{ url_for('excluir_livro', id_livro=livro['id']) }}" method="POST">
+                                    <button>Excluir</button>
+                                </form>
+                            </div>
+                        </div>
+                    </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if lidos.value == 0 %}
+                <p class="mensagem">Nenhum livro lido ainda. Continue lendo!</p>
+            {% endif %}
+        </ul>
+    {% endif %}
+
     <div class="buttons">
         <form action="{{url_for('cadastro_livros')}}">
             <button>Cadastrar livros</button>

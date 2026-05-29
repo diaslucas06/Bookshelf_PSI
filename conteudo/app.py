@@ -118,13 +118,15 @@ def livros_cadastrados():
     if 'user' not in session:
         return redirect(url_for('login'))
     
+    filtro_status = request.args.get('status', default='todos')
+    
     conexao = conectar_banco()
     cursor = conexao.cursor()
 
     resultado = cursor.execute("SELECT * FROM livros WHERE usuario_id = ?", (session['id'],))
     livros_db = resultado.fetchall()
    
-    return render_template('livros_cadastrados.html', livros = livros_db)
+    return render_template('livros_cadastrados.html', livros = livros_db, filtro_atual = filtro_status)
 
 
 @app.route('/logout', methods=['POST'])
