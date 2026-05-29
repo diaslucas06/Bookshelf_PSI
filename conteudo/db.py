@@ -25,6 +25,7 @@ def iniciar_banco():
             genero VARCHAR,
             descricao VARCHAR,
             lido BOOLEAN DEFAULT FALSE,
+            deletado BOOLEAN DEFAULT FALSE,
             usuario_id INTEGER,
             FOREIGN KEY (usuario_id) REFERENCES usuarios(id)          
         );                          

@@ -150,7 +150,7 @@ def excluir_livro(id_livro):
     conexao = conectar_banco()
     cursor = conexao.cursor()
 
-    cursor.execute("DELETE FROM livros WHERE id = ?", (id_livro,))
+    cursor.execute("UPDATE livros SET deletado = TRUE WHERE id = ?", (id_livro,)) # não exclui do banco, somente não irá mais aparecer para o usuário
 
     conexao.commit()
     conexao.close()

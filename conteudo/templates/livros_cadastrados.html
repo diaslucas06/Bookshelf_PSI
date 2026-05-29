@@ -28,26 +28,28 @@
     {% if filtro_atual == 'todos' or filtro_atual == 'nao-lidos' %}
         <h2>Não lidos</h2>
         <ul>
-        {% set nao_lidos = namespace(value=0) %}
+        {% set nao_lidos = namespace(value=0) %} <!-- define um valor que vai aumentando a cada livro, para fazer a verificação se há livros ou não -->
         
             {% for livro in livros %}
                 {% if not livro.lido %}
-                    {% set nao_lidos.value = nao_lidos.value + 1 %}
-                    <li>
-                        <h2>{{livro.titulo}}</h2>
-                        <p>{{livro.descricao}}</p>
-                        <div class="baixo-li">
-                            <h3><b>Gênero:</b> {{livro.genero}}</h3>
-                            <div class="botoes">
-                                <form action="{{ url_for('editar_livro', id_livro=livro['id']) }}">
-                                    <button>Editar</button>
-                                </form>
-                                <form action="{{ url_for('excluir_livro', id_livro=livro['id']) }}" method="POST">
-                                    <button>Excluir</button>
-                                </form>
+                    {% if not livro.deletado %}
+                        {% set nao_lidos.value = nao_lidos.value + 1 %}
+                        <li>
+                            <h2>{{livro.titulo}}</h2>
+                            <p>{{livro.descricao}}</p>
+                            <div class="baixo-li">
+                                <h3><b>Gênero:</b> {{livro.genero}}</h3>
+                                <div class="botoes">
+                                    <form action="{{ url_for('editar_livro', id_livro=livro['id']) }}">
+                                        <button>Editar</button>
+                                    </form>
+                                    <form action="{{ url_for('excluir_livro', id_livro=livro['id']) }}" method="POST">
+                                        <button>Excluir</button>
+                                    </form>
+                                </div>
                             </div>
-                        </div>
-                    </li>
+                        </li>
+                    {% endif %}
                 {% endif %}
             {% endfor %}
 
@@ -64,22 +66,24 @@
         
             {% for livro in livros %}
                 {% if livro.lido %}
-                    {% set lidos.value = lidos.value + 1 %}
-                    <li>
-                        <h2>{{livro.titulo}}</h2>
-                        <p>{{livro.descricao}}</p>
-                        <div class="baixo-li">
-                            <h3><b>Gênero:</b> {{livro.genero}}</h3>
-                            <div class="botoes">
-                                <form action="{{ url_for('editar_livro', id_livro=livro['id']) }}">
-                                    <button>Editar</button>
-                                </form>
-                                <form action="{{ url_for('excluir_livro', id_livro=livro['id']) }}" method="POST">
-                                    <button>Excluir</button>
-                                </form>
+                    {% if not livro.deletado %}
+                        {% set lidos.value = lidos.value + 1 %}
+                        <li>
+                            <h2>{{livro.titulo}}</h2>
+                            <p>{{livro.descricao}}</p>
+                            <div class="baixo-li">
+                                <h3><b>Gênero:</b> {{livro.genero}}</h3>
+                                <div class="botoes">
+                                    <form action="{{ url_for('editar_livro', id_livro=livro['id']) }}">
+                                        <button>Editar</button>
+                                    </form>
+                                    <form action="{{ url_for('excluir_livro', id_livro=livro['id']) }}" method="POST">
+                                        <button>Excluir</button>
+                                    </form>
+                                </div>
                             </div>
-                        </div>
-                    </li>
+                        </li>
+                    {% endif %}
                 {% endif %}
             {% endfor %}
 
