@@ -9,6 +9,15 @@
 {% endblock %}
 
 {% block form %}
+   {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="alertas-container">
+                {% for category, message in messages %}
+                    <div class="mensagem-flash alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
     <form id="formcadastro" action="{{url_for('cadastro')}}" method="post">
         <label for="login">Usuário</label>
         <input type="text" name="login" placeholder="Insira seu nome de usuário">
@@ -17,13 +26,4 @@
         <button id="BotaoCadastro">Enviar</button>
         <p id="mensagem"></p>
     </form>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul>
-            {% for category, message in messages %}
-                <li class="alert alert-{{ category }}">{{ message }}</li>
-            {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
 {% endblock %}
