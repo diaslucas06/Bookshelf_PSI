@@ -1,10 +1,25 @@
 from flask import Flask, request, url_for, redirect, render_template, session, flash
+from flask_login import LoginManager, login_required, logout_user, login_user
+from werkzeug.security import check_password_hash, generate_password_hash
 from .db import conectar_banco, iniciar_banco # funções do banco estão em outro arquivo
+from .models.usuario import Usuario
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'super_segredo'
 
+login_manager = LoginManager()
+login_manager.init_app(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return Usuario.encontrar_usuario(user_id)
+
 iniciar_banco()
+
+
+# ---------------------------------------------------------------------------------------
+
 
 @app.route('/')
 def index():
@@ -12,8 +27,6 @@ def index():
 
 @app.route('/cadastro', methods=['POST', 'GET'])
 def cadastro():
-    if 'user' in session:
-        return redirect(url_for('cadastro_livros'))
    
     if request.method == 'POST':
         login = request.form.get('login')
@@ -22,19 +35,16 @@ def cadastro():
         conexao = conectar_banco()
         cursor = conexao.cursor()
 
+        hash = generate_password_hash(senha)
+
         resultado = cursor.execute("SELECT * FROM usuarios WHERE usuario = ?", (login,))
         user = resultado.fetchone()
 
-
         if not user:
-           
-            cursor.execute("INSERT INTO usuarios(usuario, senha) VALUES (?,?)", (login, senha))
+            cursor.execute("INSERT INTO usuarios(usuario, senha) VALUES (?,?)", (login, hash))
             conexao.commit()
             conexao.close()
-
-
             return redirect(url_for('login'))
-       
         else:
             conexao.close()
             flash('usuário existente')
@@ -46,9 +56,6 @@ def cadastro():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-
-    if 'user' in session:
-        return redirect(url_for('cadastro_livros'))
        
     if request.method == 'POST':
         login = request.form.get('login')
@@ -61,10 +68,9 @@ def login():
         user = resultado.fetchone()
         conexao.close()
 
-
-        if user and user['usuario'] == login and user['senha'] == senha:
-            session['user'] = login
-            session['id'] = user['id']
+        if user and check_password_hash(user['senha'], senha):
+            usuario = Usuario(nome=resultado['nome'], senha=user['senha'])
+            login_user(usuario)
             return redirect(url_for('cadastro_livros'))
         else:
             flash('usuário ou senha incorreto(s)', 'error')
@@ -74,14 +80,13 @@ def login():
 
 
 @app.route('/cadastro_livros')
+@login_required
 def cadastro_livros():
-    if 'user' not in session:
-        return redirect(url_for('login'))
-   
     return render_template('cadastro_livros.html')
 
 
 @app.route('/adicionar-livro', methods=['POST'])
+@login_required
 def adicionar_livro():
     global livros
     titulo = request.form.get('titulo')
@@ -114,9 +119,8 @@ def adicionar_livro():
 
 
 @app.route('/livros-cadastrados')
+@login_required
 def livros_cadastrados():
-    if 'user' not in session:
-        return redirect(url_for('login'))
     
     filtro_status = request.args.get('status', default='todos')
     filtro_genero = request.args.get('genero', default='todos')
@@ -140,8 +144,8 @@ def livros_cadastrados():
 
 @app.route('/logout', methods=['POST'])
 def logout():
-    session.pop('user', None)
-    session.pop('id', None)
+    logout_user()
+    flash("Logout realizado com sucesso.", "success")
     return redirect(url_for('index'))
 
 
@@ -158,10 +162,8 @@ def excluir_livro(id_livro):
 
 
 @app.route('/editar-livro/<int:id_livro>', methods=['GET', 'POST'])
+@login_required
 def editar_livro(id_livro):
-
-    if 'user' not in session:
-        return redirect(url_for('login'))
     
     conexao = conectar_banco()
     cursor = conexao.cursor()
@@ -211,8 +213,6 @@ def error403(error):
 def error404(error):
     return render_template('errors/error404.html'), 404
 
-
-iniciar_banco()
 if __name__ == '__main__':
     app.run(debug=True)
    
