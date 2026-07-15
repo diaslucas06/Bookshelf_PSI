@@ -1,12 +1,13 @@
-from flask import Flask, request, url_for, redirect, render_template, session, flash
+from flask import Flask, request, url_for, redirect, render_template, flash
 from flask_login import LoginManager, login_required, logout_user, login_user
 from werkzeug.security import check_password_hash, generate_password_hash
-from .db import conectar_banco, iniciar_banco # funções do banco estão em outro arquivo
+from .db import User, Livro, Genero, db, session
 from .models.usuario import Usuario
-
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'super_segredo'
+
+db
 
 login_manager = LoginManager()
 login_manager.init_app(app)
@@ -14,9 +15,6 @@ login_manager.init_app(app)
 @login_manager.user_loader
 def load_user(user_id):
     return Usuario.encontrar_usuario(user_id)
-
-iniciar_banco()
-
 
 # ---------------------------------------------------------------------------------------
 
@@ -32,21 +30,16 @@ def cadastro():
         login = request.form.get('login')
         senha = request.form.get('senha')
 
-        conexao = conectar_banco()
-        cursor = conexao.cursor()
-
         hash = generate_password_hash(senha)
 
-        resultado = cursor.execute("SELECT * FROM usuarios WHERE usuario = ?", (login,))
-        user = resultado.fetchone()
+        user = session.query(User).filter_by(login=login).first() 
 
         if not user:
-            cursor.execute("INSERT INTO usuarios(usuario, senha) VALUES (?,?)", (login, hash))
-            conexao.commit()
-            conexao.close()
+            usuario_novo = User(login, hash)
+            session.add(usuario_novo)
+            session.commit()
             return redirect(url_for('login'))
         else:
-            conexao.close()
             flash('usuário existente')
             return redirect(url_for('cadastro'))
 
@@ -61,15 +54,10 @@ def login():
         login = request.form.get('login')
         senha = request.form.get('senha')
 
-        conexao = conectar_banco()
-        cursor = conexao.cursor()
-
-        resultado = cursor.execute("SELECT * FROM usuarios WHERE usuario = ?", (login,))
-        user = resultado.fetchone()
-        conexao.close()
+        user = session.query(User).filter_by(login=login).first() 
 
         if user and check_password_hash(user['senha'], senha):
-            usuario = Usuario(nome=resultado['nome'], senha=user['senha'])
+            usuario = Usuario(nome=user['nome'], senha=user['senha'])
             login_user(usuario)
             return redirect(url_for('cadastro_livros'))
         else:
@@ -92,9 +80,6 @@ def adicionar_livro():
     titulo = request.form.get('titulo')
     genero = request.form.get('genero')
     descricao = request.form.get('descricao')
-
-    conexao = conectar_banco()
-    cursor = conexao.cursor()
 
     resultado = cursor.execute("SELECT * FROM livros WHERE titulo = ?", (titulo,))
     book = resultado.fetchone()
