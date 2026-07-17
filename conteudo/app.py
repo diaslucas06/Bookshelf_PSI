@@ -10,6 +10,7 @@ app.config['SECRET_KEY'] = 'super_segredo'
 db
 
 login_manager = LoginManager()
+
 login_manager.init_app(app)
 
 @login_manager.user_loader
@@ -81,24 +82,23 @@ def adicionar_livro():
     genero = request.form.get('genero')
     descricao = request.form.get('descricao')
 
-    resultado = cursor.execute("SELECT * FROM livros WHERE titulo = ?", (titulo,))
-    book = resultado.fetchone()
-
+    book = session.query(Livro).filter_by(titulo=titulo, user_id=user.id).first()
     user = session['id']
 
     if not book:
            
-        cursor.execute("INSERT INTO livros(titulo, genero, descricao, usuario_id) VALUES (?,?,?,?)", (titulo, genero, descricao, user))
-        resultado = cursor.execute("SELECT * FROM generos WHERE nome = ?", (genero,))
-        genero_existe = resultado.fetchone()
-        if not genero_existe:
-            cursor.execute("INSERT INTO generos(nome) VALUES (?)", (genero,))
-        conexao.commit()
-        conexao.close()
+        n_livro = Livro(titulo = titulo, descricao = descricao, user_id=user.id).first()
+        session.add(n_livro)
 
+        genero_existe = session.query(Genero).filter_by(nome=genero).first()
+        if not genero_existe:
+           n_genero = Genero(nome=genero)
+           session.add(n_genero)
+
+        session.commit()
         return redirect(url_for('livros_cadastrados'))
     
-    conexao.close()
+   
     flash('livro existente')
     return redirect(url_for('livros_cadastrados'))
 
@@ -110,19 +110,19 @@ def livros_cadastrados():
     filtro_status = request.args.get('status', default='todos')
     filtro_genero = request.args.get('genero', default='todos')
     
-    conexao = conectar_banco()
-    cursor = conexao.cursor()
+    generos_db = session.query(Genero).all()
 
-    resultado_generos = cursor.execute("SELECT * FROM generos")
-    generos_db = resultado_generos.fetchall()
-
+    query = session.query(Livro).filter(Livro.user_id == user.id, Livro.deletado != True)
+    
     if filtro_genero != 'todos':
-        resultado = cursor.execute("SELECT * FROM livros WHERE usuario_id = ? AND genero = ?", (session['id'], filtro_genero))
-    else:
-        resultado = cursor.execute("SELECT * FROM livros WHERE usuario_id = ?", (session['id'],))
-        
-    livros_db = resultado.fetchall()
-    conexao.close()
+        query = query.filter(Livro.genero == filtro_genero)
+   
+    if filtro_status == 'lidos':
+        query = query.filter(Livro.lido == True)
+    elif filtro_status == 'nao_lido':
+        query = query.filter(Livro.lido != True)
+
+    livros_db = query.all()
    
     return render_template( 'livros_cadastrados.html', livros=livros_db, filtro_atual=filtro_status, generos=generos_db, genero_atual=filtro_genero)
 
@@ -136,13 +136,12 @@ def logout():
 
 @app.route('/excluir-livro/<int:id_livro>' , methods=['POST'])
 def excluir_livro(id_livro):
-    conexao = conectar_banco()
-    cursor = conexao.cursor()
+    livro = session.query(Livro).filter_by(id=id_livro, user_id = user.id).first()
 
-    cursor.execute("UPDATE livros SET deletado = TRUE WHERE id = ?", (id_livro,)) # não exclui do banco, somente não irá mais aparecer para o usuário
+    if livro:
+        livro.deletado = True
+        session.commit()
 
-    conexao.commit()
-    conexao.close()
     return redirect(url_for('livros_cadastrados'))
 
 
@@ -150,31 +149,22 @@ def excluir_livro(id_livro):
 @login_required
 def editar_livro(id_livro):
     
-    conexao = conectar_banco()
-    cursor = conexao.cursor()
+    livro = session.query(Livro).filter_by(id=id_livro, user_id=user.id).first()
 
     if request.method == 'GET':
-        resultado = cursor.execute("SELECT * FROM livros WHERE id = ?", (id_livro,))
-        livro = resultado.fetchone()
+          return render_template('editar_livro.html', livro=livro)
 
-        conexao.commit()
-        conexao.close()
-
-        if livro:
-            return render_template('editar_livro.html', livro=livro)
-        
+    if not livro:
+          
         flash("Livro não encontrado.")
         return redirect(url_for('livros_cadastrados'))
 
-    titulo = request.form.get('titulo')
-    genero = request.form.get('genero')
-    descricao = request.form.get('descricao')
-    lido = request.form.get('lido') == 'on'
+    livro.titulo = request.form.get('titulo')
+    livro.genero = request.form.get('genero')
+    livro.descricao = request.form.get('descricao')
+    livro.lido = request.form.get('lido') == 'on'
     
-    conexao.execute("UPDATE livros SET titulo = ?, genero = ?, descricao = ?, lido = ? WHERE id = ?", (titulo, genero, descricao, lido, id_livro))
-    
-    conexao.commit()
-    conexao.close()
+    session.commit()
 
     return redirect(url_for('livros_cadastrados'))
 
