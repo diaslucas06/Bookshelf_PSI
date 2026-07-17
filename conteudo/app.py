@@ -1,5 +1,5 @@
 from flask import Flask, request, url_for, redirect, render_template, flash
-from flask_login import LoginManager, login_required, logout_user, login_user
+from flask_login import LoginManager, login_required, logout_user, login_user, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from .db import User, Livro, Genero, db, session
 from .models.usuario import Usuario
@@ -13,9 +13,11 @@ login_manager = LoginManager()
 
 login_manager.init_app(app)
 
+login_manager.login_view = 'login'
+
 @login_manager.user_loader
 def load_user(user_id):
-    return Usuario.encontrar_usuario(user_id)
+    return session.query(User).get(int(user_id))
 
 # ---------------------------------------------------------------------------------------
 
@@ -36,7 +38,7 @@ def cadastro():
         user = session.query(User).filter_by(login=login).first() 
 
         if not user:
-            usuario_novo = User(login, hash)
+            usuario_novo = User(login=login, senha=hash)
             session.add(usuario_novo)
             session.commit()
             return redirect(url_for('login'))
@@ -56,10 +58,8 @@ def login():
         senha = request.form.get('senha')
 
         user = session.query(User).filter_by(login=login).first() 
-
-        if user and check_password_hash(user['senha'], senha):
-            usuario = Usuario(nome=user['nome'], senha=user['senha'])
-            login_user(usuario)
+        if user and check_password_hash(user.senha, senha):
+            login_user(user) 
             return redirect(url_for('cadastro_livros'))
         else:
             flash('usuário ou senha incorreto(s)', 'error')
@@ -77,23 +77,24 @@ def cadastro_livros():
 @app.route('/adicionar-livro', methods=['POST'])
 @login_required
 def adicionar_livro():
-    global livros
+    
     titulo = request.form.get('titulo')
     genero = request.form.get('genero')
     descricao = request.form.get('descricao')
 
-    book = session.query(Livro).filter_by(titulo=titulo, user_id=user.id).first()
-    user = session['id']
+    id_usuario_atual = current_user.id
+    
+    book = session.query(Livro).filter_by(titulo=titulo, user_id=id_usuario_atual).first()
 
     if not book:
            
-        n_livro = Livro(titulo = titulo, descricao = descricao, user_id=user.id).first()
+        n_livro = Livro(titulo=titulo, descricao=descricao, user_id=id_usuario_atual, genero=genero)
         session.add(n_livro)
 
         genero_existe = session.query(Genero).filter_by(nome=genero).first()
         if not genero_existe:
-           n_genero = Genero(nome=genero)
-           session.add(n_genero)
+            n_genero = Genero(nome=genero)
+            session.add(n_genero)
 
         session.commit()
         return redirect(url_for('livros_cadastrados'))
@@ -112,7 +113,7 @@ def livros_cadastrados():
     
     generos_db = session.query(Genero).all()
 
-    query = session.query(Livro).filter(Livro.user_id == user.id, Livro.deletado != True)
+    query = session.query(Livro).filter(Livro.user_id == current_user.id, Livro.deletado != True)
     
     if filtro_genero != 'todos':
         query = query.filter(Livro.genero == filtro_genero)
@@ -136,7 +137,7 @@ def logout():
 
 @app.route('/excluir-livro/<int:id_livro>' , methods=['POST'])
 def excluir_livro(id_livro):
-    livro = session.query(Livro).filter_by(id=id_livro, user_id = user.id).first()
+    livro = session.query(Livro).filter_by(id=id_livro, user_id=current_user.id).first()
 
     if livro:
         livro.deletado = True
@@ -149,7 +150,7 @@ def excluir_livro(id_livro):
 @login_required
 def editar_livro(id_livro):
     
-    livro = session.query(Livro).filter_by(id=id_livro, user_id=user.id).first()
+    livro = session.query(Livro).filter_by(id=id_livro, user_id=current_user.id).first()
 
     if request.method == 'GET':
           return render_template('editar_livro.html', livro=livro)

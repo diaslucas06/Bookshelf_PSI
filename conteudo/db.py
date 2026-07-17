@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, Column, String, Integer, Boolean, ForeignKey
 from sqlalchemy.orm import sessionmaker, declarative_base
+from flask_login import UserMixin
 
 
 db = create_engine("sqlite:///banco.db")
@@ -9,7 +10,7 @@ session = Session()
 Base = declarative_base() # Cria todas as tabelas do banco de dados dentro do db
 
 # Tabelas
-class User(Base):
+class User(Base, UserMixin):
 
     __tablename__ = "users" 
 
@@ -51,7 +52,7 @@ class Genero(Base):
     __tablename__ = 'generos'
 
     id = Column('id', Integer, primary_key=True, autoincrement=True)
-    nome = Column('nome', ForeignKey('livros.genero'))
+    nome = Column('nome', String)
 
     # Não é necessário id, pois é autoincrement
     def __init__(self, nome):
